@@ -22,7 +22,8 @@ export class Taximail implements INodeType {
 		icon: 'file:taximail.svg',
 		credentials: [
 			{
-				name: 'httpBasicAuth-Api',
+				/* eslint-disable-next-line n8n-nodes-base/node-class-description-credentials-name-unsuffixed */
+				name: 'httpBasicAuth',
 				required: true,
 			},
 		],
@@ -74,7 +75,7 @@ export class Taximail implements INodeType {
 	async execute(this: IExecuteFunctions) {
 		const items = this.getInputData();
 		const returnItems = [];
-		const credentials = await this.getCredentials('httpBasicAuth-Api');
+		const credentials = await this.getCredentials('httpBasicAuth');
 		const username = credentials.user as string;
 		const password = credentials.password as string;
 
