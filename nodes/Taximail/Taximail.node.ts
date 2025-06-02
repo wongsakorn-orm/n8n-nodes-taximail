@@ -124,11 +124,9 @@ export class Taximail implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: { operation: ['email'] },
-					hide: { email_template_key: [{ _cnd: { not: '' } }] },
 				},
 				default: '',
-				required: true,
-				description: 'Email subject line',
+				description: 'Email subject line (not needed if using template_key)',
 			},
 			{
 				displayName: 'HTML Content',
@@ -136,11 +134,9 @@ export class Taximail implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: { operation: ['email'] },
-					hide: { email_template_key: [{ _cnd: { not: '' } }] },
 				},
 				default: '',
-				required: true,
-				description: 'HTML email content',
+				description: 'HTML email content (not needed if using template_key)',
 			},
 
 			// SMS fields
@@ -171,11 +167,10 @@ export class Taximail implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: { operation: ['sms'] },
-					hide: { sms_template_key: [{ _cnd: { not: '' } }] },
 				},
 				default: '',
-				required: true,
-				description: 'SMS message text (keep under 160 characters)',
+				description:
+					'SMS message text (not needed if using template_key, keep under 160 characters)',
 			},
 
 			// SMS OTP fields
