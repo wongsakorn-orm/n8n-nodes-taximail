@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-taximail",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "AI Agent Tool for sending Email and SMS via Taximail",
 	"keywords": [
 		"n8n-community-node-package"
