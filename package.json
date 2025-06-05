@@ -1,9 +1,24 @@
 {
-	"name": "n8n-nodes-taximail",
-	"version": "1.0.4",
+	"name": "@orisma/n8n-nodes-taximail",
+	"version": "1.0.5",
 	"description": "AI Agent Tool for sending Email and SMS via Taximail",
 	"keywords": [
-		"n8n-community-node-package"
+		"n8n-community-node-package",
+		"n8n",
+		"n8n-node",
+		"email",
+		"sms",
+		"taximail",
+		"transactional-email",
+		"bulk-sms",
+		"email-api",
+		"sms-api",
+		"email-marketing",
+		"sms-marketing",
+		"automation",
+		"workflow",
+		"marketing-automation",
+		"ai-agent-tool"
 	],
 	"license": "MIT",
 	"homepage": "",

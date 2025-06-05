@@ -1,0 +1,67 @@
+{
+    "name": "@orisma/n8n-nodes-taximail",
+    "version": "1.0.4",
+    "description": "AI Agent Tool for sending Email and SMS via Taximail",
+    "keywords": [
+        "n8n-community-node-package",
+        "n8n",
+        "n8n-node",
+        "email",
+        "sms",
+        "taximail",
+        "transactional-email",
+        "bulk-sms",
+        "email-api",
+        "sms-api",
+        "email-marketing",
+        "sms-marketing",
+        "automation",
+        "workflow",
+        "marketing-automation",
+        "ai-agent-tool"
+    ],
+    "license": "MIT",
+    "homepage": "",
+    "author": {
+        "name": "Wongsakorn Nawbantad",
+        "email": "wongsakorn@orisma.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/wongsakorn-orm/n8n-nodes-taximail"
+    },
+    "engines": {
+        "node": ">=20.15"
+    },
+    "main": "index.js",
+    "scripts": {
+        "build": "npx rimraf dist && tsc && gulp build:icons",
+        "dev": "tsc --watch",
+        "format": "prettier nodes --write",
+        "lint": "eslint nodes package.json",
+        "lintfix": "eslint nodes package.json --fix",
+        "prepublishOnly": "npm run build && npm run lint"
+    },
+    "files": [
+        "dist"
+    ],
+    "n8n": {
+        "n8nNodesApiVersion": 1,
+        "nodes": [
+            "dist/nodes/Taximail/Taximail.node.js"
+        ]
+    },
+    "devDependencies": {
+        "@typescript-eslint/parser": "~8.32.0",
+        "eslint": "^8.57.1",
+        "eslint-plugin-n8n-nodes-base": "^1.16.3",
+        "gulp": "^5.0.0",
+        "jest": "^29.7.0",
+        "n8n-node-dev": "^1.94.0",
+        "prettier": "^3.5.3",
+        "typescript": "^5.8.3"
+    },
+    "peerDependencies": {
+        "n8n-workflow": "*"
+    }
+}
