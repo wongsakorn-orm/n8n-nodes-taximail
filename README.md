@@ -40,7 +40,7 @@ You will need a **Taximail API Key** to use this node.
 1. Sign up or log in at [https://www.taximail.com](https://www.taximail.com)
 2. Follow this guide to create an API key:  
    [https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations](https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations)
-3. Add the credentials in n8n using **HTTP Basic Auth** (API key as username, password can be blank or dummy).
+3. Add the credentials in n8n using **HTTP Basic Auth**
 
 ---
 
