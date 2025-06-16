@@ -2,7 +2,7 @@
 
 This is an n8n community node. It lets you use **Taximail** in your n8n AI Agent workflows as a Tool.
 
-**Taximail** is a Thailand-based service for sending transactional emails and SMS. This node allows AI Agents to send messages via Taximail, verify OTP codes, and check message delivery status.
+**Taximail** is a communication service for sending transactional emails and SMS globally. This node allows AI Agents to send messages via Taximail, verify OTP codes, and check message delivery status with intelligent context awareness.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -11,6 +11,7 @@ This is an n8n community node. It lets you use **Taximail** in your n8n AI Agent
 [Credentials](#credentials)  
 [Compatibility](#compatibility)  
 [Usage](#usage)  
+[AI Agent Configuration](#ai-agent-configuration)  
 [Resources](#resources)
 
 ---
@@ -54,7 +55,7 @@ You will need a **Taximail API Key** to use this node.
 
 ## Usage
 
-This node is designed to be used with **AI Agents** in n8n.
+This node is designed to be used with **AI Agents** in n8n with intelligent context handling.
 
 ### Email Operations:
 
@@ -70,10 +71,10 @@ This node is designed to be used with **AI Agents** in n8n.
   - Custom SMS text (keep under 160 characters)
 - Returns a `message_id` that can be used to check delivery status later
 
-### OTP Operations:
+### Smart OTP Operations:
 
 - **Send SMS OTP**: Requires recipient phone number and a `template_key` (mandatory for OTP)
-- **Verify OTP**: Requires the `message_id` from the OTP sending response and the OTP code to verify
+- **Verify OTP**: The AI Agent automatically uses the `message_id` from recent OTP sending - no need to ask users for it again!
 - Returns verification status (success/failure)
 
 ### Status Operations:
@@ -85,6 +86,8 @@ This node is designed to be used with **AI Agents** in n8n.
 
 When used with AI Agents, the node can:
 
+- **Smart Context Handling**: Automatically remembers `message_id` from sent OTPs
+- **Intelligent Verification**: Never asks users for `message_id` when it's already available in conversation
 - Detect message type based on context (email vs SMS)
 - Convert phone numbers to proper MSISDN format
 - Ask for missing required parameters
@@ -92,7 +95,67 @@ When used with AI Agents, the node can:
 
 ### Language support:
 
-The node works with any language supported by the AI Agent.
+The node works with any language supported by the AI Agent (Thai, English, etc.).
+
+---
+
+## AI Agent Configuration
+
+For optimal performance, configure your AI Agent with the following prompt structure:
+
+### Recommended AI Agent Prompt:
+
+\`\`\`
+You are a Taximail Communication Assistant, an AI agent specialized in helping users send emails, SMS, and manage OTP communications through the Taximail service.
+
+## IMPORTANT: Context Memory Rules
+
+- **ALWAYS remember information from the current conversation**
+- **When you send an OTP, AUTOMATICALLY save the Message ID for verification**
+- **If user provides an OTP code, use the MOST RECENT Message ID from the conversation**
+- **DO NOT ask for Message ID again if it was already provided in this conversation**
+
+## Smart OTP Verification Flow:
+
+1. When sending OTP → Save Message ID automatically
+2. When user provides OTP code → Use the saved Message ID immediately
+3. Only ask for Message ID if no OTP was sent in this conversation
+
+## Example Smart Flow:
+
+User: "Send OTP to +66891725538"
+You: _Send OTP_ → "OTP sent! Message ID: ABC123 saved for verification"
+User: "The code is 1234"
+You: _Verify immediately using ABC123_ → "Verifying code 1234..."
+
+Remember: **NEVER ask for information you already have from the conversation context!**
+\`\`\`
+
+### Memory Configuration:
+
+Use **Simple Memory** node to store conversation context:
+
+- **Memory Key**: `taximail_context`
+- **Store**: Message IDs, phone numbers, and verification status
+- **Auto-retrieve**: Recent OTP Message IDs for verification
+
+### Example Conversation Flow:
+
+**Smart Behavior (✅ Correct):**
+\`\`\`
+User: "Send OTP to +66891725538"
+Agent: [Sends OTP] "OTP sent successfully! Message ID: XYZ789 saved for verification"
+User: "The OTP code is 5678"
+Agent: [Auto-verifies with XYZ789] "Verifying code 5678 with saved Message ID..."
+\`\`\`
+
+**Poor Behavior (❌ Avoid):**
+\`\`\`
+User: "Send OTP to +66891725538"  
+Agent: [Sends OTP] "OTP sent successfully! Message ID: XYZ789"
+User: "The OTP code is 5678"
+Agent: "Please provide the Message ID to verify" ← Wrong! Should use XYZ789
+\`\`\`
 
 ---
 
@@ -101,3 +164,4 @@ The node works with any language supported by the AI Agent.
 - [n8n Community Nodes Documentation](https://docs.n8n.io/integrations/#community-nodes)
 - [Taximail API Key Creation Guide](https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations)
 - [Taximail Platform Documentation](https://www.taximail.com/en/support/using-taximail)
+- [n8n AI Agent Documentation](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/)
