@@ -1,6 +1,6 @@
 {
 	"name": "@orisma/n8n-nodes-taximail",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "AI Agent Tool for sending Email and SMS via Taximail",
 	"keywords": [
 		"n8n-community-node-package",

@@ -152,7 +152,8 @@ class Taximail {
                     },
                     default: '',
                     required: true,
-                    description: 'Message ID from OTP sending response',
+                    description: 'Message ID from OTP sending response (data.message_id)',
+                    placeholder: 'e.g., 63bf89390fe2f00008a236c3',
                 },
                 {
                     displayName: 'OTP Code',
@@ -163,7 +164,8 @@ class Taximail {
                     },
                     default: '',
                     required: true,
-                    description: 'OTP code to verify',
+                    description: 'OTP code entered by user (usually 4-6 digits)',
+                    placeholder: 'e.g., 123456',
                 },
                 {
                     displayName: 'Message ID',
@@ -236,7 +238,13 @@ class Taximail {
             json: true,
         };
         if (body) {
-            options.form = body;
+            if (method === 'GET') {
+                const params = new URLSearchParams(body).toString();
+                options.uri = `${endpoint}?${params}`;
+            }
+            else {
+                options.form = body;
+            }
         }
         return options;
     }
@@ -299,6 +307,7 @@ class Taximail {
         };
     }
     async sendSMSOTP(executeFunctions, itemIndex, username, password) {
+        var _a, _b;
         const toPhone = executeFunctions.getNodeParameter('to_phone', itemIndex);
         const templateKey = executeFunctions.getNodeParameter('otp_template_key', itemIndex);
         if (!templateKey || templateKey.trim() === '') {
@@ -316,23 +325,54 @@ class Taximail {
             ...response,
             operation: 'sms_otp',
             note: Taximail.SUCCESS_MESSAGES.SAVE_FOR_VERIFY,
+            verification_info: {
+                message_id: (_a = response.data) === null || _a === void 0 ? void 0 : _a.message_id,
+                otp_ref_no: (_b = response.data) === null || _b === void 0 ? void 0 : _b.otp_ref_no,
+                next_step: 'Use the message_id to verify the OTP code entered by user',
+            },
         };
     }
     async verifyOTP(executeFunctions, itemIndex, username, password) {
         const messageId = executeFunctions.getNodeParameter('verify_message_id', itemIndex);
         const otpCode = executeFunctions.getNodeParameter('otp_code', itemIndex);
-        const endpoint = `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId}?otp_code=${otpCode}`;
-        const options = this.createRequestOptions('GET', endpoint, username, password);
-        const response = await executeFunctions.helpers.request(options);
-        const isValid = response.status === 'success' && response.code === 202;
-        return {
-            ...response,
-            operation: 'verify_otp',
-            otp_valid: isValid,
-            message: isValid
-                ? Taximail.SUCCESS_MESSAGES.OTP_VALID
-                : Taximail.SUCCESS_MESSAGES.OTP_INVALID,
-        };
+        if (!messageId || messageId.trim() === '') {
+            throw new n8n_workflow_1.NodeOperationError(executeFunctions.getNode(), Taximail.ERROR_MESSAGES.MISSING_MESSAGE_ID);
+        }
+        if (!otpCode || otpCode.trim() === '') {
+            throw new n8n_workflow_1.NodeOperationError(executeFunctions.getNode(), Taximail.ERROR_MESSAGES.MISSING_OTP_CODE);
+        }
+        const endpoint = `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId.trim()}`;
+        const queryParams = { otp_code: otpCode.trim() };
+        const options = this.createRequestOptions('GET', endpoint, username, password, queryParams);
+        try {
+            const response = await executeFunctions.helpers.request(options);
+            const isValid = response.status === 'success' && response.code === 202;
+            return {
+                ...response,
+                operation: 'verify_otp',
+                message_id: messageId,
+                otp_code: otpCode,
+                otp_valid: isValid,
+                verification_result: isValid ? 'VALID' : 'INVALID',
+                message: isValid
+                    ? Taximail.SUCCESS_MESSAGES.OTP_VALID
+                    : Taximail.SUCCESS_MESSAGES.OTP_INVALID,
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                status: 'error',
+                operation: 'verify_otp',
+                message_id: messageId,
+                otp_code: otpCode,
+                otp_valid: false,
+                verification_result: 'ERROR',
+                message: Taximail.ERROR_MESSAGES.OTP_VERIFICATION_FAILED,
+                error_details: error.message,
+                timestamp: new Date().toISOString(),
+            };
+        }
     }
     async checkStatus(executeFunctions, itemIndex, username, password) {
         const messageId = executeFunctions.getNodeParameter('status_message_id', itemIndex);
@@ -359,13 +399,16 @@ Taximail.ENDPOINTS = {
 };
 Taximail.ERROR_MESSAGES = {
     OTP_TEMPLATE_REQUIRED: 'OTP SMS Template Key is required for sending OTP',
+    OTP_VERIFICATION_FAILED: 'OTP verification failed - invalid code or expired',
     OPERATION_FAILED: 'Operation failed',
     UNKNOWN_OPERATION: 'Unknown operation',
+    MISSING_MESSAGE_ID: 'Message ID is required for OTP verification',
+    MISSING_OTP_CODE: 'OTP code is required for verification',
 };
 Taximail.SUCCESS_MESSAGES = {
-    OTP_VALID: 'OTP verification successful',
-    OTP_INVALID: 'OTP verification failed',
+    OTP_VALID: 'OTP verification successful - code is valid',
+    OTP_INVALID: 'OTP verification failed - code is invalid or expired',
     SAVE_MESSAGE_ID: 'Save this message_id to check delivery status later',
-    SAVE_FOR_VERIFY: 'Save the message_id to verify OTP later',
+    SAVE_FOR_VERIFY: 'Save the message_id and otp_ref_no to verify OTP later',
 };
 //# sourceMappingURL=Taximail.node.js.map
