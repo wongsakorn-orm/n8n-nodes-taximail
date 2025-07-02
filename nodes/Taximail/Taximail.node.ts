@@ -4,7 +4,7 @@ import {
 	type INodeType,
 	type INodeTypeDescription,
 	NodeOperationError,
-	type IHttpRequestMethods,
+	type IHttpRequestOptions,
 } from 'n8n-workflow';
 
 export class Taximail implements INodeType {
@@ -56,8 +56,7 @@ export class Taximail implements INodeType {
 		icon: 'file:taximail.svg',
 		credentials: [
 			{
-				/* eslint-disable-next-line n8n-nodes-base/node-class-description-credentials-name-unsuffixed */
-				name: 'httpBasicAuth',
+				name: 'taximailApi',
 				required: true,
 			},
 		],
@@ -189,7 +188,7 @@ export class Taximail implements INodeType {
 				description: 'Template key for OTP SMS (required for OTP sending)',
 			},
 
-			// Verify OTP fields - IMPROVED
+			// Verify OTP fields
 			{
 				displayName: 'Message ID',
 				name: 'verify_message_id',
@@ -236,10 +235,8 @@ export class Taximail implements INodeType {
 	async execute(this: IExecuteFunctions) {
 		const items = this.getInputData();
 		const returnItems: INodeExecutionData[] = [];
-		const credentials = await this.getCredentials('httpBasicAuth');
-		const username = credentials.user as string;
-		const password = credentials.password as string;
 
+		// Create node instance like the original code
 		const nodeInstance = new Taximail();
 
 		for (let i = 0; i < items.length; i++) {
@@ -249,19 +246,19 @@ export class Taximail implements INodeType {
 			try {
 				switch (operation) {
 					case 'email':
-						result = await nodeInstance.sendEmail(this, i, username, password);
+						result = await nodeInstance.sendEmail(this, i);
 						break;
 					case 'sms':
-						result = await nodeInstance.sendSMS(this, i, username, password);
+						result = await nodeInstance.sendSMS(this, i);
 						break;
 					case 'sms_otp':
-						result = await nodeInstance.sendSMSOTP(this, i, username, password);
+						result = await nodeInstance.sendSMSOTP(this, i);
 						break;
 					case 'verify_otp':
-						result = await nodeInstance.verifyOTP(this, i, username, password);
+						result = await nodeInstance.verifyOTP(this, i);
 						break;
 					case 'check_status':
-						result = await nodeInstance.checkStatus(this, i, username, password);
+						result = await nodeInstance.checkStatus(this, i);
 						break;
 					default:
 						throw new NodeOperationError(
@@ -295,42 +292,29 @@ export class Taximail implements INodeType {
 	}
 
 	/**
-	 * Create request options for API calls
+	 * Convert object to URL-encoded string for form data
 	 */
-	private createRequestOptions(
-		method: IHttpRequestMethods,
-		endpoint: string,
-		username: string,
-		password: string,
-		body?: any,
-	) {
-		const options: any = {
-			method,
-			uri: endpoint,
-			auth: { user: username, pass: password },
-			json: true,
-		};
-
-		if (body) {
-			if (method === 'GET') {
-				// For GET requests, add parameters to URL
-				const params = new URLSearchParams(body).toString();
-				options.uri = `${endpoint}?${params}`;
-			} else {
-				// For POST requests, use form data
-				options.form = body;
-			}
-		}
-
-		return options;
+	private objectToFormData(obj: any): string {
+		return Object.keys(obj)
+			.map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+			.join('&');
 	}
 
-	private async sendEmail(
+	/**
+	 * Make HTTP request with authentication
+	 */
+	private async makeAuthenticatedRequest(
 		executeFunctions: IExecuteFunctions,
-		itemIndex: number,
-		username: string,
-		password: string,
+		options: IHttpRequestOptions,
 	): Promise<any> {
+		return await executeFunctions.helpers.httpRequestWithAuthentication.call(
+			executeFunctions,
+			'taximailApi',
+			options,
+		);
+	}
+
+	private async sendEmail(executeFunctions: IExecuteFunctions, itemIndex: number): Promise<any> {
 		const toEmail = executeFunctions.getNodeParameter('to_email', itemIndex) as string;
 		const fromEmail = executeFunctions.getNodeParameter('from_email', itemIndex) as string;
 		const fromName = executeFunctions.getNodeParameter('from_name', itemIndex) as string;
@@ -357,14 +341,16 @@ export class Taximail implements INodeType {
 			body.content_html = htmlContent;
 		}
 
-		const options = this.createRequestOptions(
-			'POST',
-			Taximail.ENDPOINTS.TRANSACTIONAL,
-			username,
-			password,
-			body,
-		);
-		const response = await executeFunctions.helpers.request!(options);
+		const options: IHttpRequestOptions = {
+			method: 'POST',
+			url: Taximail.ENDPOINTS.TRANSACTIONAL,
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: this.objectToFormData(body),
+		};
+
+		const response = await this.makeAuthenticatedRequest(executeFunctions, options);
 
 		return {
 			...response,
@@ -374,12 +360,7 @@ export class Taximail implements INodeType {
 		};
 	}
 
-	private async sendSMS(
-		executeFunctions: IExecuteFunctions,
-		itemIndex: number,
-		username: string,
-		password: string,
-	): Promise<any> {
+	private async sendSMS(executeFunctions: IExecuteFunctions, itemIndex: number): Promise<any> {
 		const toPhone = executeFunctions.getNodeParameter('to_phone', itemIndex) as string;
 		const templateKey = executeFunctions.getNodeParameter('sms_template_key', itemIndex) as string;
 
@@ -399,14 +380,16 @@ export class Taximail implements INodeType {
 			body.text = smsText;
 		}
 
-		const options = this.createRequestOptions(
-			'POST',
-			Taximail.ENDPOINTS.SMS,
-			username,
-			password,
-			body,
-		);
-		const response = await executeFunctions.helpers.request!(options);
+		const options: IHttpRequestOptions = {
+			method: 'POST',
+			url: Taximail.ENDPOINTS.SMS,
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: this.objectToFormData(body),
+		};
+
+		const response = await this.makeAuthenticatedRequest(executeFunctions, options);
 
 		return {
 			...response,
@@ -416,12 +399,7 @@ export class Taximail implements INodeType {
 		};
 	}
 
-	private async sendSMSOTP(
-		executeFunctions: IExecuteFunctions,
-		itemIndex: number,
-		username: string,
-		password: string,
-	): Promise<any> {
+	private async sendSMSOTP(executeFunctions: IExecuteFunctions, itemIndex: number): Promise<any> {
 		const toPhone = executeFunctions.getNodeParameter('to_phone', itemIndex) as string;
 		const templateKey = executeFunctions.getNodeParameter('otp_template_key', itemIndex) as string;
 
@@ -439,20 +417,21 @@ export class Taximail implements INodeType {
 			generate_link: true,
 		};
 
-		const options = this.createRequestOptions(
-			'POST',
-			Taximail.ENDPOINTS.OTP,
-			username,
-			password,
-			body,
-		);
-		const response = await executeFunctions.helpers.request!(options);
+		const options: IHttpRequestOptions = {
+			method: 'POST',
+			url: Taximail.ENDPOINTS.OTP,
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: this.objectToFormData(body),
+		};
+
+		const response = await this.makeAuthenticatedRequest(executeFunctions, options);
 
 		return {
 			...response,
 			operation: 'sms_otp',
 			note: Taximail.SUCCESS_MESSAGES.SAVE_FOR_VERIFY,
-			// Add helpful information for next step
 			verification_info: {
 				message_id: response.data?.message_id,
 				otp_ref_no: response.data?.otp_ref_no,
@@ -461,17 +440,10 @@ export class Taximail implements INodeType {
 		};
 	}
 
-	// FIXED: OTP Verification method
-	private async verifyOTP(
-		executeFunctions: IExecuteFunctions,
-		itemIndex: number,
-		username: string,
-		password: string,
-	): Promise<any> {
+	private async verifyOTP(executeFunctions: IExecuteFunctions, itemIndex: number): Promise<any> {
 		const messageId = executeFunctions.getNodeParameter('verify_message_id', itemIndex) as string;
 		const otpCode = executeFunctions.getNodeParameter('otp_code', itemIndex) as string;
 
-		// Validate inputs
 		if (!messageId || messageId.trim() === '') {
 			throw new NodeOperationError(
 				executeFunctions.getNode(),
@@ -486,17 +458,17 @@ export class Taximail implements INodeType {
 			);
 		}
 
-		// Construct the correct endpoint according to API docs
-		// GET https://api.taximail.com/v2/otp/verify/{message_id}?otp_code={code}
-		const endpoint = `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId.trim()}`;
-		const queryParams = { otp_code: otpCode.trim() };
-
-		const options = this.createRequestOptions('GET', endpoint, username, password, queryParams);
+		const options: IHttpRequestOptions = {
+			method: 'GET',
+			url: `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId.trim()}`,
+			qs: {
+				otp_code: otpCode.trim(),
+			},
+		};
 
 		try {
-			const response = await executeFunctions.helpers.request!(options);
+			const response = await this.makeAuthenticatedRequest(executeFunctions, options);
 
-			// Check if verification was successful based on API response
 			const isValid = response.status === 'success' && response.code === 202;
 
 			return {
@@ -512,7 +484,6 @@ export class Taximail implements INodeType {
 				timestamp: new Date().toISOString(),
 			};
 		} catch (error) {
-			// Handle API errors gracefully
 			return {
 				status: 'error',
 				operation: 'verify_otp',
@@ -527,17 +498,15 @@ export class Taximail implements INodeType {
 		}
 	}
 
-	private async checkStatus(
-		executeFunctions: IExecuteFunctions,
-		itemIndex: number,
-		username: string,
-		password: string,
-	): Promise<any> {
+	private async checkStatus(executeFunctions: IExecuteFunctions, itemIndex: number): Promise<any> {
 		const messageId = executeFunctions.getNodeParameter('status_message_id', itemIndex) as string;
 
-		const endpoint = `${Taximail.ENDPOINTS.TRANSACTIONAL}/${messageId}`;
-		const options = this.createRequestOptions('GET', endpoint, username, password);
-		const response = await executeFunctions.helpers.request!(options);
+		const options: IHttpRequestOptions = {
+			method: 'GET',
+			url: `${Taximail.ENDPOINTS.TRANSACTIONAL}/${messageId}`,
+		};
+
+		const response = await this.makeAuthenticatedRequest(executeFunctions, options);
 
 		return {
 			...response,

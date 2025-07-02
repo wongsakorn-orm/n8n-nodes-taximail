@@ -19,7 +19,7 @@ class Taximail {
             icon: 'file:taximail.svg',
             credentials: [
                 {
-                    name: 'httpBasicAuth',
+                    name: 'taximailApi',
                     required: true,
                 },
             ],
@@ -187,9 +187,6 @@ class Taximail {
     async execute() {
         const items = this.getInputData();
         const returnItems = [];
-        const credentials = await this.getCredentials('httpBasicAuth');
-        const username = credentials.user;
-        const password = credentials.password;
         const nodeInstance = new Taximail();
         for (let i = 0; i < items.length; i++) {
             const operation = this.getNodeParameter('operation', i);
@@ -197,19 +194,19 @@ class Taximail {
             try {
                 switch (operation) {
                     case 'email':
-                        result = await nodeInstance.sendEmail(this, i, username, password);
+                        result = await nodeInstance.sendEmail(this, i);
                         break;
                     case 'sms':
-                        result = await nodeInstance.sendSMS(this, i, username, password);
+                        result = await nodeInstance.sendSMS(this, i);
                         break;
                     case 'sms_otp':
-                        result = await nodeInstance.sendSMSOTP(this, i, username, password);
+                        result = await nodeInstance.sendSMSOTP(this, i);
                         break;
                     case 'verify_otp':
-                        result = await nodeInstance.verifyOTP(this, i, username, password);
+                        result = await nodeInstance.verifyOTP(this, i);
                         break;
                     case 'check_status':
-                        result = await nodeInstance.checkStatus(this, i, username, password);
+                        result = await nodeInstance.checkStatus(this, i);
                         break;
                     default:
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `${Taximail.ERROR_MESSAGES.UNKNOWN_OPERATION}: ${operation}`);
@@ -230,25 +227,15 @@ class Taximail {
         const randomString = Math.random().toString(36).substr(2, 9);
         return `${prefix}_${timestamp}_${randomString}`;
     }
-    createRequestOptions(method, endpoint, username, password, body) {
-        const options = {
-            method,
-            uri: endpoint,
-            auth: { user: username, pass: password },
-            json: true,
-        };
-        if (body) {
-            if (method === 'GET') {
-                const params = new URLSearchParams(body).toString();
-                options.uri = `${endpoint}?${params}`;
-            }
-            else {
-                options.form = body;
-            }
-        }
-        return options;
+    objectToFormData(obj) {
+        return Object.keys(obj)
+            .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(obj[key])}`)
+            .join('&');
     }
-    async sendEmail(executeFunctions, itemIndex, username, password) {
+    async makeAuthenticatedRequest(executeFunctions, options) {
+        return await executeFunctions.helpers.httpRequestWithAuthentication.call(executeFunctions, 'taximailApi', options);
+    }
+    async sendEmail(executeFunctions, itemIndex) {
         const toEmail = executeFunctions.getNodeParameter('to_email', itemIndex);
         const fromEmail = executeFunctions.getNodeParameter('from_email', itemIndex);
         const fromName = executeFunctions.getNodeParameter('from_name', itemIndex);
@@ -270,8 +257,15 @@ class Taximail {
             body.subject = subject;
             body.content_html = htmlContent;
         }
-        const options = this.createRequestOptions('POST', Taximail.ENDPOINTS.TRANSACTIONAL, username, password, body);
-        const response = await executeFunctions.helpers.request(options);
+        const options = {
+            method: 'POST',
+            url: Taximail.ENDPOINTS.TRANSACTIONAL,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: this.objectToFormData(body),
+        };
+        const response = await this.makeAuthenticatedRequest(executeFunctions, options);
         return {
             ...response,
             operation: 'email',
@@ -279,7 +273,7 @@ class Taximail {
             note: Taximail.SUCCESS_MESSAGES.SAVE_MESSAGE_ID,
         };
     }
-    async sendSMS(executeFunctions, itemIndex, username, password) {
+    async sendSMS(executeFunctions, itemIndex) {
         const toPhone = executeFunctions.getNodeParameter('to_phone', itemIndex);
         const templateKey = executeFunctions.getNodeParameter('sms_template_key', itemIndex);
         const body = {
@@ -297,8 +291,15 @@ class Taximail {
             const smsText = executeFunctions.getNodeParameter('sms_text', itemIndex);
             body.text = smsText;
         }
-        const options = this.createRequestOptions('POST', Taximail.ENDPOINTS.SMS, username, password, body);
-        const response = await executeFunctions.helpers.request(options);
+        const options = {
+            method: 'POST',
+            url: Taximail.ENDPOINTS.SMS,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: this.objectToFormData(body),
+        };
+        const response = await this.makeAuthenticatedRequest(executeFunctions, options);
         return {
             ...response,
             operation: 'sms',
@@ -306,7 +307,7 @@ class Taximail {
             note: Taximail.SUCCESS_MESSAGES.SAVE_MESSAGE_ID,
         };
     }
-    async sendSMSOTP(executeFunctions, itemIndex, username, password) {
+    async sendSMSOTP(executeFunctions, itemIndex) {
         var _a, _b;
         const toPhone = executeFunctions.getNodeParameter('to_phone', itemIndex);
         const templateKey = executeFunctions.getNodeParameter('otp_template_key', itemIndex);
@@ -319,8 +320,15 @@ class Taximail {
             report_webhook: true,
             generate_link: true,
         };
-        const options = this.createRequestOptions('POST', Taximail.ENDPOINTS.OTP, username, password, body);
-        const response = await executeFunctions.helpers.request(options);
+        const options = {
+            method: 'POST',
+            url: Taximail.ENDPOINTS.OTP,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: this.objectToFormData(body),
+        };
+        const response = await this.makeAuthenticatedRequest(executeFunctions, options);
         return {
             ...response,
             operation: 'sms_otp',
@@ -332,7 +340,7 @@ class Taximail {
             },
         };
     }
-    async verifyOTP(executeFunctions, itemIndex, username, password) {
+    async verifyOTP(executeFunctions, itemIndex) {
         const messageId = executeFunctions.getNodeParameter('verify_message_id', itemIndex);
         const otpCode = executeFunctions.getNodeParameter('otp_code', itemIndex);
         if (!messageId || messageId.trim() === '') {
@@ -341,11 +349,15 @@ class Taximail {
         if (!otpCode || otpCode.trim() === '') {
             throw new n8n_workflow_1.NodeOperationError(executeFunctions.getNode(), Taximail.ERROR_MESSAGES.MISSING_OTP_CODE);
         }
-        const endpoint = `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId.trim()}`;
-        const queryParams = { otp_code: otpCode.trim() };
-        const options = this.createRequestOptions('GET', endpoint, username, password, queryParams);
+        const options = {
+            method: 'GET',
+            url: `${Taximail.ENDPOINTS.OTP_VERIFY}/${messageId.trim()}`,
+            qs: {
+                otp_code: otpCode.trim(),
+            },
+        };
         try {
-            const response = await executeFunctions.helpers.request(options);
+            const response = await this.makeAuthenticatedRequest(executeFunctions, options);
             const isValid = response.status === 'success' && response.code === 202;
             return {
                 ...response,
@@ -374,11 +386,13 @@ class Taximail {
             };
         }
     }
-    async checkStatus(executeFunctions, itemIndex, username, password) {
+    async checkStatus(executeFunctions, itemIndex) {
         const messageId = executeFunctions.getNodeParameter('status_message_id', itemIndex);
-        const endpoint = `${Taximail.ENDPOINTS.TRANSACTIONAL}/${messageId}`;
-        const options = this.createRequestOptions('GET', endpoint, username, password);
-        const response = await executeFunctions.helpers.request(options);
+        const options = {
+            method: 'GET',
+            url: `${Taximail.ENDPOINTS.TRANSACTIONAL}/${messageId}`,
+        };
+        const response = await this.makeAuthenticatedRequest(executeFunctions, options);
         return {
             ...response,
             operation: 'check_status',

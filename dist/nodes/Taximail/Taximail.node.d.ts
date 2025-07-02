@@ -10,7 +10,8 @@ export declare class Taximail implements INodeType {
     description: INodeTypeDescription;
     execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]>;
     private generateMessageId;
-    private createRequestOptions;
+    private objectToFormData;
+    private makeAuthenticatedRequest;
     private sendEmail;
     private sendSMS;
     private sendSMSOTP;
