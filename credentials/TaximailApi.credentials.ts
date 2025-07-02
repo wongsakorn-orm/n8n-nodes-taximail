@@ -1,4 +1,10 @@
-import type { IAuthenticateGeneric, ICredentialType, INodeProperties, Icon } from 'n8n-workflow';
+import type {
+	IAuthenticateGeneric,
+	ICredentialType,
+	INodeProperties,
+	Icon,
+	ICredentialTestRequest,
+} from 'n8n-workflow';
 
 export class TaximailApi implements ICredentialType {
 	name = 'taximailApi';
@@ -35,6 +41,15 @@ export class TaximailApi implements ICredentialType {
 				username: '={{$credentials.username}}',
 				password: '={{$credentials.password}}',
 			},
+		},
+	};
+
+	// Test endpoint to verify credentials work - get transactional groups
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: 'https://api.taximail.com',
+			url: '/v2/transactional',
+			method: 'GET',
 		},
 	};
 }

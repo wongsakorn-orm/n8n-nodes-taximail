@@ -1,4 +1,4 @@
-import type { IAuthenticateGeneric, ICredentialType, INodeProperties, Icon } from 'n8n-workflow';
+import type { IAuthenticateGeneric, ICredentialType, INodeProperties, Icon, ICredentialTestRequest } from 'n8n-workflow';
 export declare class TaximailApi implements ICredentialType {
     name: string;
     displayName: string;
@@ -6,4 +6,5 @@ export declare class TaximailApi implements ICredentialType {
     icon: Icon;
     properties: INodeProperties[];
     authenticate: IAuthenticateGeneric;
+    test: ICredentialTestRequest;
 }

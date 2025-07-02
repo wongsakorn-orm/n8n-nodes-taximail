@@ -37,6 +37,13 @@ class TaximailApi {
                 },
             },
         };
+        this.test = {
+            request: {
+                baseURL: 'https://api.taximail.com',
+                url: '/v2/transactional',
+                method: 'GET',
+            },
+        };
     }
 }
 exports.TaximailApi = TaximailApi;
