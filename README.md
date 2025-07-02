@@ -36,12 +36,23 @@ Once installed, the `Taximail` node will be available as a **Tool** for AI Agent
 
 ## Credentials
 
-You will need a **Taximail API Key** to use this node.
+You will need **Taximail API credentials** to use this node.
+
+### Getting Your API Credentials:
 
 1. Sign up or log in at [https://www.taximail.com](https://www.taximail.com)
-2. Follow this guide to create an API key:  
+2. Navigate to the Integration section in your dashboard
+3. Generate your API Key and Secret Key
+4. Follow this guide for detailed steps:  
    [https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations](https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations)
-3. Add the credentials in n8n using **HTTP Basic Auth**
+
+### Adding Credentials in n8n:
+
+1. In n8n, create a new credential
+2. Select **"Taximail API"** as the credential type
+3. Enter your credentials:
+   - **API Key**: Your Taximail API Key from the Integration section
+   - **Secret Key**: Your Taximail Secret Key from the Integration section
 
 ---
 
@@ -105,7 +116,7 @@ For optimal performance, configure your AI Agent with the following prompt struc
 
 ### Recommended AI Agent Prompt:
 
-\`\`\`
+```
 You are a Taximail Communication Assistant, an AI agent specialized in helping users send emails, SMS, and manage OTP communications through the Taximail service.
 
 ## IMPORTANT: Context Memory Rules
@@ -129,7 +140,7 @@ User: "The code is 1234"
 You: _Verify immediately using ABC123_ → "Verifying code 1234..."
 
 Remember: **NEVER ask for information you already have from the conversation context!**
-\`\`\`
+```
 
 ### Memory Configuration:
 
@@ -142,20 +153,22 @@ Use **Simple Memory** node to store conversation context:
 ### Example Conversation Flow:
 
 **Smart Behavior (✅ Correct):**
-\`\`\`
+
+```
 User: "Send OTP to +66891725538"
 Agent: [Sends OTP] "OTP sent successfully! Message ID: XYZ789 saved for verification"
 User: "The OTP code is 5678"
 Agent: [Auto-verifies with XYZ789] "Verifying code 5678 with saved Message ID..."
-\`\`\`
+```
 
 **Poor Behavior (❌ Avoid):**
-\`\`\`
-User: "Send OTP to +66891725538"  
+
+```
+User: "Send OTP to +66891725538"
 Agent: [Sends OTP] "OTP sent successfully! Message ID: XYZ789"
 User: "The OTP code is 5678"
 Agent: "Please provide the Message ID to verify" ← Wrong! Should use XYZ789
-\`\`\`
+```
 
 ---
 
