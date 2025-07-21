@@ -1,0 +1,33 @@
+{
+	"node": "n8n-nodes-base.taximail",
+	"nodeVersion": "1.0.11",
+	"codexVersion": "1.0",
+	"categories": ["Communication", "Marketing & Content"],
+	"subcategories": {
+		"Communication": ["Email", "SMS", "Messaging"],
+		"Marketing & Content": ["Email Marketing", "Transactional Email"]
+	},
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://www.taximail.com/en/support/using-taximail"
+			}
+		],
+		"credentialDocumentation": [
+			{
+				"url": "https://www.taximail.com/en/support/using-taximail/learn-about-api-integrations"
+			}
+		]
+	},
+	"alias": [
+		"mail",
+		"email",
+		"sms",
+		"otp",
+		"transactional email",
+		"bulk sms",
+		"messaging",
+		"taximail",
+		"communication"
+	]
+}
